@@ -1,4 +1,5 @@
 # 构建产物
+build-standalone/
 build-v1/
 build-v2/
 apk/
