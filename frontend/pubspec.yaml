@@ -31,12 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # HTTP 客户端，用于调用 Go 后端 API
-  http: ^1.2.0
-
-  # 本地存储，用于保存后端地址配置
-  shared_preferences: ^2.2.0
-
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
