@@ -1,0 +1,50 @@
+# 构建产物
+build-v1/
+build-v2/
+apk/
+dist/
+exe/
+release/
+tmp-gradle-wrapper/
+
+# SDK 和依赖
+android-sdk/
+node_modules/
+.cargo/
+.gradle/
+
+# Flutter 构建产物
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/android/.gradle/
+frontend/android/local.properties
+
+# Tauri 构建产物
+src-tauri/target/
+src-tauri/gen/
+
+# Android 构建产物
+android/build/
+android/app/build/
+android/.gradle/
+
+# IDE 和编辑器
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*~

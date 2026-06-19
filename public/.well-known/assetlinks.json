@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.song123jian.julong",
+    "sha256_cert_fingerprints": ["2A:52:C4:61:2F:6A:F2:C1:27:AB:2E:F0:44:72:A7:4B:FF:46:48:CA:A7:20:4D:96:78:35:45:F7:98:63:34:D9"]
+  }
+}]

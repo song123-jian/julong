@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>聚隆科技</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    .splash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .splash-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 40%, rgba(217, 119, 6, 0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 60%, rgba(13, 148, 136, 0.06) 0%, transparent 50%);
+      animation: bgShift 4s ease-in-out infinite alternate;
+    }
+    @keyframes bgShift {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(2%, 2%); }
+    }
+    .logo-section {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeInUp 0.6s ease-out;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .logo-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #D97706, #0D9488);
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+    .logo-icon::after {
+      content: '聚';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+    @keyframes logoPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(217, 119, 6, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(217, 119, 6, 0.5); }
+    }
+    .app-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: 4px;
+      margin-bottom: 6px;
+    }
+    .app-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 2px;
+    }
+    .loading-bar-container {
+      position: relative;
+      z-index: 1;
+      margin-top: 36px;
+      width: 160px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .loading-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #D97706, #0D9488);
+      border-radius: 2px;
+      animation: loadProgress 1.8s ease-in-out forwards;
+    }
+    @keyframes loadProgress {
+      0% { width: 0%; }
+      60% { width: 70%; }
+      100% { width: 100%; }
+    }
+    .version-text {
+      position: relative;
+      z-index: 1;
+      margin-top: 12px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-container">
+    <div class="logo-section">
+      <div class="logo-icon"></div>
+      <div class="app-name">聚隆科技</div>
+      <div class="app-subtitle">产品牌号解析系统</div>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
+    <div class="version-text">v1.1.0</div>
+  </div>
+</body>
+</html>

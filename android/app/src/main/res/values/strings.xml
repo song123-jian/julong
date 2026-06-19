@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">聚隆科技</string>
+    <string name="title_activity_main">聚隆科技</string>
+    <string name="package_name">com.julong.app</string>
+    <string name="custom_url_scheme">com.julong.app</string>
+</resources>
