@@ -14,14 +14,6 @@ node_modules/
 .cargo/
 .gradle/
 
-# Flutter 构建产物
-frontend/build/
-frontend/.dart_tool/
-frontend/.flutter-plugins
-frontend/.flutter-plugins-dependencies
-frontend/android/.gradle/
-frontend/android/local.properties
-
 # Tauri 构建产物
 src-tauri/target/
 src-tauri/gen/
