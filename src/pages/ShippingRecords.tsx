@@ -131,7 +131,7 @@ export default function ShippingRecords() {
     };
     window.addEventListener('shipping-records-updated', handleUpdate);
     return () => window.removeEventListener('shipping-records-updated', handleUpdate);
-  }, []);
+  }, [setRecords]);
 
   const resetForm = () => {
     setCustomer('');

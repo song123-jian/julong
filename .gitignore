@@ -7,6 +7,10 @@ dist/
 exe/
 release/
 tmp-gradle-wrapper/
+app-debug.apk
+README.txt
+*.exe
+*.zip
 
 # SDK 和依赖
 android-sdk/
@@ -41,3 +45,9 @@ desktop.ini
 # 临时文件
 *.tmp
 *~
+
+# Local environment secrets
+.env
+.env.local
+.env.development.local
+.env.production.local

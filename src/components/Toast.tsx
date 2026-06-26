@@ -1,26 +1,10 @@
-import { useState, useEffect, createContext, useContext, useCallback, ReactNode } from 'react';
-
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { ToastContext, type ToastType } from './toast-context';
 
 interface ToastItem {
   id: number;
   message: string;
   type: ToastType;
-}
-
-interface ToastContextValue {
-  showToast: (message: string, type?: ToastType) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    // 在 Provider 外使用时返回空函数，不报错
-    return { showToast: (_msg: string, _type?: ToastType) => {} };
-  }
-  return ctx;
 }
 
 let toastId = 0;
@@ -31,7 +15,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = ++toastId;
     setToasts(prev => [...prev, { id, message, type }]);
-    // 3秒后自动消失
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 3000);
@@ -40,7 +23,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast 容器 */}
       <div className="fixed top-4 right-4 z-[10000] flex flex-col gap-2 pointer-events-none">
         {toasts.map(toast => (
           <ToastCard key={toast.id} toast={toast} />
@@ -54,7 +36,6 @@ function ToastCard({ toast }: { toast: ToastItem }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // 触发进入动画
     requestAnimationFrame(() => setVisible(true));
   }, []);
 
@@ -66,10 +47,10 @@ function ToastCard({ toast }: { toast: ToastItem }) {
   };
 
   const icons: Record<ToastType, string> = {
-    success: '✓',
-    error: '✕',
-    info: 'ℹ',
-    warning: '⚠',
+    success: 'OK',
+    error: 'ERR',
+    info: 'INFO',
+    warning: 'WARN',
   };
 
   return (
@@ -78,7 +59,7 @@ function ToastCard({ toast }: { toast: ToastItem }) {
         visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
-      <span className="text-base font-bold shrink-0">{icons[toast.type]}</span>
+      <span className="text-xs font-bold shrink-0">{icons[toast.type]}</span>
       <span className="text-sm">{toast.message}</span>
     </div>
   );

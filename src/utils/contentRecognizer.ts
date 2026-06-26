@@ -32,19 +32,48 @@ export interface RecognizedTravelItem {
 export type RecognizeStatus = 'idle' | 'loading' | 'recognizing' | 'done' | 'error';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const PDF_WORKER_SRC = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+
+function ensureReadableFile(file: File | Blob) {
+  if (file instanceof File && file.size === 0) {
+    throw new Error('文件为空');
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('文件大小超过50MB限制');
+  }
+}
 
 // 动态加载 pdfjsDist 并设置 worker
 async function loadPdfjs() {
   const pdfjsLib = await import('pdfjs-dist');
-  if (typeof window !== 'undefined') {
-    try {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-    } catch {
-      // CDN不可用时使用内联worker（降级方案）
-      console.warn('[Recognizer] PDF.js Worker CDN 不可用，PDF识别功能可能受限，请检查网络连接');
-    }
+  if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions.workerSrc !== PDF_WORKER_SRC) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
   }
   return pdfjsLib;
+}
+
+async function recognizeImageText(
+  file: File | Blob,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const Tesseract = await import('tesseract.js');
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('OCR识别超时，请尝试更小的图片')), 120000)
+  );
+  const result = await Promise.race([
+    Tesseract.recognize(file, 'chi_sim+eng', {
+      logger: (info) => {
+        if (info.status === 'recognizing text' && onProgress) {
+          onProgress(Math.round(info.progress * 100));
+        } else if ((info.status === 'loading tesseract core' || info.status === 'loading language traineddata') && onProgress) {
+          onProgress(Math.round(info.progress * 30));
+        }
+      },
+    }),
+    timeout
+  ]);
+
+  return result.data.text;
 }
 
 function roundPrice(n: number): number { return Math.round(n * 100) / 100; }
@@ -202,27 +231,8 @@ export async function recognizeFromImage(
   file: File | Blob,
   onProgress?: (progress: number) => void
 ): Promise<RecognizedItem[]> {
-  if (file instanceof File && file.size === 0) throw new Error('文件为空');
-  if (file instanceof File && file.size > MAX_FILE_SIZE) throw new Error('文件大小超过50MB限制');
-
-  const Tesseract = await import('tesseract.js');
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('OCR识别超时，请尝试更小的图片')), 120000)
-  );
-  const result = await Promise.race([
-    Tesseract.recognize(file, 'chi_sim+eng', {
-      logger: (info) => {
-        if (info.status === 'recognizing text' && onProgress) {
-          onProgress(Math.round(info.progress * 100));
-        } else if ((info.status === 'loading tesseract core' || info.status === 'loading language traineddata') && onProgress) {
-          onProgress(Math.round(info.progress * 30));
-        }
-      },
-    }),
-    timeout
-  ]);
-
-  const text = result.data.text;
+  ensureReadableFile(file);
+  const text = await recognizeImageText(file, onProgress);
   return parseTextContent(text);
 }
 
@@ -232,8 +242,7 @@ export async function recognizeFromImage(
  * 从PDF中提取文本并解析材料行
  */
 export async function recognizeFromPdf(file: File | Blob): Promise<RecognizedItem[]> {
-  if (file instanceof File && file.size === 0) throw new Error('文件为空');
-  if (file instanceof File && file.size > MAX_FILE_SIZE) throw new Error('文件大小超过50MB限制');
+  ensureReadableFile(file);
   try {
     const pdfjsLib = await loadPdfjs();
     const arrayBuffer = await file.arrayBuffer();
@@ -265,8 +274,7 @@ export async function recognizeFromPdf(file: File | Blob): Promise<RecognizedIte
  */
 export async function recognizeFromWord(file: File | Blob): Promise<RecognizedItem[]> {
   try {
-    if (file instanceof File && file.size === 0) throw new Error('文件为空');
-    if (file instanceof File && file.size > MAX_FILE_SIZE) throw new Error('文件大小超过50MB限制');
+    ensureReadableFile(file);
     const mammoth = await import('mammoth');
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
@@ -285,42 +293,44 @@ export async function recognizeFromWord(file: File | Blob): Promise<RecognizedIt
  */
 export async function recognizeFromExcel(file: File | Blob): Promise<RecognizedItem[]> {
   try {
-    if (file instanceof File && file.size > MAX_FILE_SIZE) throw new Error('文件大小超过50MB限制');
+    ensureReadableFile(file);
     const XLSX = await import('xlsx');
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows: string[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) return [];
+    const firstSheet = workbook.Sheets[firstSheetName];
+    const rows: string[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-  const MAX_ROWS = 500;
-  const effectiveRows = rows.length > MAX_ROWS ? rows.slice(0, MAX_ROWS) : rows;
+    const MAX_ROWS = 500;
+    const effectiveRows = rows.length > MAX_ROWS ? rows.slice(0, MAX_ROWS) : rows;
 
-  if (effectiveRows.length < 2) return [];
+    if (effectiveRows.length < 2) return [];
 
-  // 识别表头
-  const header = effectiveRows[0].map(h => String(h || '').trim().toLowerCase());
-  const colMap = { material: -1, grade: -1, price: -1, remark: -1 };
+    // 识别表头
+    const header = effectiveRows[0].map(h => String(h || '').trim().toLowerCase());
+    const colMap = { material: -1, grade: -1, price: -1, remark: -1 };
 
-  header.forEach((h, i) => {
-    if (/材料|material|名称|name/.test(h)) colMap.material = i;
-    else if (/牌号|grade|型号|model|编号/.test(h)) colMap.grade = i;
-    else if (/价格|price|单价|unitprice|报价/.test(h)) colMap.price = i;
-    else if (/备注|remark|说明|note/.test(h)) colMap.remark = i;
-  });
+    header.forEach((h, i) => {
+      if (/材料|material|名称|name/.test(h)) colMap.material = i;
+      else if (/牌号|grade|型号|model|编号/.test(h)) colMap.grade = i;
+      else if (/价格|price|单价|unitprice|报价/.test(h)) colMap.price = i;
+      else if (/备注|remark|说明|note/.test(h)) colMap.remark = i;
+    });
 
-  // 如果没有匹配到表头，尝试按列位置猜测
-  if (colMap.material === -1 && colMap.price === -1) {
-    // 假设: 第1列材料名, 第2列牌号, 第3列价格, 第4列备注
-    if (effectiveRows[0].length >= 2) colMap.material = 0;
-    if (effectiveRows[0].length >= 2) colMap.grade = 1;
-    if (effectiveRows[0].length >= 3) colMap.price = 2;
-    if (effectiveRows[0].length >= 4) colMap.remark = 3;
-    // 从第0行开始（无表头）
-    return parseExcelRows(effectiveRows, colMap);
-  }
+    // 如果没有匹配到表头，尝试按列位置猜测
+    if (colMap.material === -1 && colMap.price === -1) {
+      // 假设: 第1列材料名, 第2列牌号, 第3列价格, 第4列备注
+      if (effectiveRows[0].length >= 1) colMap.material = 0;
+      if (effectiveRows[0].length >= 2) colMap.grade = 1;
+      if (effectiveRows[0].length >= 3) colMap.price = 2;
+      if (effectiveRows[0].length >= 4) colMap.remark = 3;
+      // 从第0行开始（无表头）
+      return parseExcelRows(effectiveRows, colMap);
+    }
 
-  // 跳过表头行
-  return parseExcelRows(effectiveRows.slice(1), colMap);
+    // 跳过表头行
+    return parseExcelRows(effectiveRows.slice(1), colMap);
   } catch (err) {
     console.error('[Recognizer] Excel解析失败:', err);
     throw new Error(err instanceof Error ? err.message : 'Excel文件解析失败');
@@ -516,11 +526,13 @@ function parseShippingParts(rows: string[][]): RecognizedShippingItem[] {
  * 从Excel解析发货记录
  */
 export async function recognizeShippingFromExcel(file: File | Blob): Promise<RecognizedShippingItem[]> {
-  if (file instanceof File && file.size > MAX_FILE_SIZE) throw new Error('文件大小超过50MB限制');
+  ensureReadableFile(file);
   const XLSX = await import('xlsx');
   const arrayBuffer = await file.arrayBuffer();
   const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) return [];
+  const firstSheet = workbook.Sheets[firstSheetName];
   const rows: string[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
   const MAX_ROWS = 500;
@@ -590,17 +602,8 @@ export async function recognizeShippingContent(
   let text = '';
   switch (type) {
     case 'image': {
-      const Tesseract = await import('tesseract.js');
-      const result = await Tesseract.recognize(file, 'chi_sim+eng', {
-        logger: (info) => {
-          if (info.status === 'recognizing text' && onProgress) {
-            onProgress(Math.round(info.progress * 100));
-          } else if ((info.status === 'loading tesseract core' || info.status === 'loading language traineddata') && onProgress) {
-            onProgress(Math.round(info.progress * 30));
-          }
-        },
-      });
-      text = result.data.text;
+      ensureReadableFile(file);
+      text = await recognizeImageText(file, onProgress);
       break;
     }
     case 'pdf': {
@@ -751,17 +754,8 @@ export async function recognizeTravelContent(
   let text = '';
   switch (type) {
     case 'image': {
-      const Tesseract = await import('tesseract.js');
-      const result = await Tesseract.recognize(file, 'chi_sim+eng', {
-        logger: (info) => {
-          if (info.status === 'recognizing text' && onProgress) {
-            onProgress(Math.round(info.progress * 100));
-          } else if ((info.status === 'loading tesseract core' || info.status === 'loading language traineddata') && onProgress) {
-            onProgress(Math.round(info.progress * 30));
-          }
-        },
-      });
-      text = result.data.text;
+      ensureReadableFile(file);
+      text = await recognizeImageText(file, onProgress);
       break;
     }
     case 'pdf': {
@@ -785,11 +779,13 @@ export async function recognizeTravelContent(
       break;
     }
     case 'excel': {
-      if (file instanceof File && file.size > MAX_FILE_SIZE) throw new Error('文件大小超过50MB限制');
+      ensureReadableFile(file);
       const XLSX = await import('xlsx');
       const ab = await file.arrayBuffer();
       const workbook = XLSX.read(ab, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const firstSheetName = workbook.SheetNames[0];
+      if (!firstSheetName) return [];
+      const firstSheet = workbook.Sheets[firstSheetName];
       const rows: string[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
       const MAX_ROWS = 500;
       const effectiveRows = rows.length > MAX_ROWS ? rows.slice(0, MAX_ROWS) : rows;

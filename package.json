@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:capacitor": "tsc -b && vite build --mode capacitor",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc -b --noEmit",
@@ -16,10 +17,12 @@
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
-    "cap:build:android": "npm run build && cap sync android",
+    "cap:build:android": "npm run build:capacitor && cap sync android",
     "build:exe": "npm run build && cd src-tauri && cargo tauri build",
-    "build:apk": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleRelease",
-    "build:apk:debug": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug"
+    "build:exe:portable": "powershell -ExecutionPolicy Bypass -File scripts/build-portable-exe.ps1",
+    "pack:exe:portable": "powershell -ExecutionPolicy Bypass -File scripts/pack-portable-exe.ps1",
+    "build:apk": "npm run build:capacitor && npx cap sync android && cd android && .\\gradlew.bat assembleRelease",
+    "build:apk:debug": "npm run build:capacitor && npx cap sync android && cd android && .\\gradlew.bat assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
@@ -30,7 +33,7 @@
     "@capacitor/status-bar": "^8.0.2",
     "@capawesome/capacitor-file-picker": "^8.0.2",
     "@supabase/supabase-js": "^2.108.1",
-    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-fs": "^2.5.1",
     "clsx": "^2.1.1",

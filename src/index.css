@@ -62,6 +62,35 @@ body {
   animation: windowFadeIn 0.3s ease-in-out;
 }
 
+@keyframes launchLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes launchProgress {
+  0% { width: 0%; opacity: 0.7; }
+  70% { width: 78%; opacity: 1; }
+  100% { width: 88%; opacity: 1; }
+}
+
+@keyframes launchProgressReady {
+  0% { width: 88%; }
+  100% { width: 100%; }
+}
+
+.launch-logo {
+  animation: launchLogoFloat 2.4s ease-in-out infinite;
+}
+
+.launch-progress {
+  width: 0;
+  animation: launchProgress 1s ease-out forwards;
+}
+
+.launch-progress-ready {
+  animation: launchProgressReady 0.45s ease-out forwards;
+}
+
 /* ========== 页面切换动画 ========== */
 @keyframes pageEnter {
   from { opacity: 0; transform: translateY(8px); }

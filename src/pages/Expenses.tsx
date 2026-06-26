@@ -1,6 +1,7 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { useState } from 'react';
 import { Calculator, Copy, CheckCircle, Wallet, MapPin, Compass } from 'lucide-react';
 import { isTier1City, HOTEL_TIER1_MAX, HOTEL_NORMAL_MAX, TAXI_MAX, TRANSPORT_TIER1_MAX, TRANSPORT_NORMAL_MAX, ALLOWANCE_NANJING, ALLOWANCE_OTHER } from '../config/expenseRules';
+import { copyText } from '@/lib/utils';
 
 const EXPENSE_RULES = {
   allowance: {
@@ -142,10 +143,10 @@ export default function Expenses() {
     }
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!result) return;
     const text = `出差费用计算结果\n==================\n天数: ${days}天\n城市: ${city.trim() || '未指定'}\n地区: ${isTier1 ? '一线城市' : '一般地区'}\n\n出差补贴: ¥${result.allowance}\n交通报销: ¥${result.transport}\n住宿标准: ¥${result.hotel}\n------------------\n合计: ¥${result.total}`;
-    navigator.clipboard.writeText(text);
+    await copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

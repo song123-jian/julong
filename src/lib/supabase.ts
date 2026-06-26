@@ -4,22 +4,31 @@ const SUPABASE_URL_KEY = 'supabase_url';
 const SUPABASE_KEY_KEY = 'supabase_anon_key';
 const SUPABASE_DISABLED_KEY = 'supabase_disabled';
 
-// 优先从环境变量读取（构建时注入），避免密钥明文入仓
-// 留空时回退到 localStorage 中的用户配置，再回退到默认值
+// Prefer env at build time, then fall back to user-provided local config.
 const ENV_SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || '';
 const ENV_SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || '';
 
-// 默认配置仅作为兜底（个人离线/无 env 时使用）
-const DEFAULT_SUPABASE_URL = 'https://asoytlhyiujjxmvvkxca.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_lGn2XuKLHSym6huLUpmRtA_wL-HImVs';
-
 let supabaseInstance: SupabaseClient | null = null;
+
+export function hasEmbeddedSupabaseConfig(): boolean {
+  return Boolean(ENV_SUPABASE_URL && ENV_SUPABASE_ANON_KEY);
+}
+
+export function isUsingEmbeddedSupabaseConfig(): boolean {
+  if (localStorage.getItem(SUPABASE_DISABLED_KEY) === 'true') return false;
+
+  const localUrl = localStorage.getItem(SUPABASE_URL_KEY);
+  const localAnonKey = localStorage.getItem(SUPABASE_KEY_KEY);
+  return !localUrl && !localAnonKey && hasEmbeddedSupabaseConfig();
+}
 
 export function getSupabaseConfig(): { url: string; anonKey: string } | null {
   if (localStorage.getItem(SUPABASE_DISABLED_KEY) === 'true') return null;
-  // 优先级：localStorage（用户自定义）> 环境变量 > 默认值
-  const url = localStorage.getItem(SUPABASE_URL_KEY) || ENV_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-  const anonKey = localStorage.getItem(SUPABASE_KEY_KEY) || ENV_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+
+  const url = localStorage.getItem(SUPABASE_URL_KEY) || ENV_SUPABASE_URL;
+  const anonKey = localStorage.getItem(SUPABASE_KEY_KEY) || ENV_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) return null;
   return { url, anonKey };
 }
 
@@ -27,7 +36,6 @@ export function saveSupabaseConfig(url: string, anonKey: string) {
   localStorage.setItem(SUPABASE_URL_KEY, url);
   localStorage.setItem(SUPABASE_KEY_KEY, anonKey);
   localStorage.removeItem(SUPABASE_DISABLED_KEY);
-  // 重新初始化客户端
   supabaseInstance = null;
   getSupabase();
 }
@@ -39,10 +47,19 @@ export function clearSupabaseConfig() {
   supabaseInstance = null;
 }
 
+export function restoreEmbeddedSupabaseConfig() {
+  localStorage.removeItem(SUPABASE_URL_KEY);
+  localStorage.removeItem(SUPABASE_KEY_KEY);
+  localStorage.removeItem(SUPABASE_DISABLED_KEY);
+  supabaseInstance = null;
+}
+
 export function getSupabase(): SupabaseClient | null {
   if (supabaseInstance) return supabaseInstance;
+
   const config = getSupabaseConfig();
   if (!config) return null;
+
   supabaseInstance = createClient(config.url, config.anonKey);
   return supabaseInstance;
 }
@@ -51,59 +68,52 @@ export function isSupabaseConfigured(): boolean {
   return getSupabaseConfig() !== null;
 }
 
-// Supabase 数据库建表 SQL
-// 在 Supabase Dashboard 的 SQL Editor 中执行以下 SQL：
+// Run this in the Supabase SQL editor to create the required tables.
+// The sample policies below are only suitable for a personal project/database.
+// Do not reuse a shared public project for multiple users.
 export const SETUP_SQL = `
--- 报价单表
 CREATE TABLE IF NOT EXISTS quotations (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 报价记录表
 CREATE TABLE IF NOT EXISTS quotation_records (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 发货记录表
 CREATE TABLE IF NOT EXISTS shipping_records (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 出行记录表
 CREATE TABLE IF NOT EXISTS travel_records (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 物流分工表
 CREATE TABLE IF NOT EXISTS logistics_assignments (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 物流异常表
 CREATE TABLE IF NOT EXISTS logistics_exceptions (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 代班历史表
 CREATE TABLE IF NOT EXISTS logistics_history (
   id TEXT PRIMARY KEY,
   data JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 启用 RLS（行级安全）
 ALTER TABLE quotations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quotation_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shipping_records ENABLE ROW LEVEL SECURITY;
@@ -112,8 +122,6 @@ ALTER TABLE logistics_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE logistics_exceptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE logistics_history ENABLE ROW LEVEL SECURITY;
 
--- 创建策略：允许匿名读写（个人使用，简单方案）
--- 策略名称加表名前缀，避免重复执行冲突
 DROP POLICY IF EXISTS "Allow all on quotations" ON quotations;
 DROP POLICY IF EXISTS "Allow all on quotation_records" ON quotation_records;
 DROP POLICY IF EXISTS "Allow all on shipping_records" ON shipping_records;

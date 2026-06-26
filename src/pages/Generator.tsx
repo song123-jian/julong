@@ -3,6 +3,7 @@ import { generateCode, getGeneratorOptions, GeneratorOptions, validateOptions } 
 import { parseCode } from '@/utils/parser';
 import { Copy, RotateCcw, CheckCircle, Sparkles, Search, Layers } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { copyText } from '@/lib/utils';
 
 export default function Generator() {
   const options = useMemo(() => getGeneratorOptions(), []);
@@ -48,9 +49,9 @@ export default function Generator() {
     });
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!generated) return;
-    navigator.clipboard.writeText(generated);
+    await copyText(generated);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     setHistory(prev => {
@@ -73,8 +74,8 @@ export default function Generator() {
     setBatchResults([...new Set(results)]);
   };
 
-  const handleCopyAll = () => {
-    navigator.clipboard.writeText(batchResults.join('\n'));
+  const handleCopyAll = async () => {
+    await copyText(batchResults.join('\n'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

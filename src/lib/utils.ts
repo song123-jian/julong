@@ -44,6 +44,37 @@ export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** 复制文本（支持浏览器 / WebView 降级） */
+export async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // 某些 WebView / 非安全上下文会失败，继续走降级方案
+    }
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  textarea.style.top = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+
+  try {
+    const ok = document.execCommand('copy');
+    if (!ok) {
+      throw new Error('复制失败');
+    }
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 /** 下载Blob文件（支持Tauri/Capacitor/浏览器） */
 export async function downloadBlob(blob: Blob, filename: string) {
   if (isCapacitor()) {

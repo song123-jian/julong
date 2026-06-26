@@ -3,6 +3,7 @@ import { parseBatchCode, BatchParseResult } from '@/utils/batch';
 import { BATCH_CODES, TEST_CODES, BATCH_FORMAT } from '@/utils/rules';
 import { recognizeContent, type RecognizeStatus } from '../utils/contentRecognizer';
 import { Copy, RotateCcw, AlertTriangle, CheckCircle, Hash, Sparkles, Upload, Loader2, X } from 'lucide-react';
+import { copyText } from '@/lib/utils';
 
 const SEGMENT_COLORS = ['#D97706', '#0D9488', '#DC2626', '#7C3AED', '#059669'];
 
@@ -54,19 +55,19 @@ export default function Batch() {
     setBatchResults(lines.map(line => parseBatchCode(line)));
   };
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async (text: string) => {
+    await copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopyTable = () => {
+  const handleCopyTable = async () => {
     if (!result) return;
     const header = '| 字段 | 值 | 含义 |';
     const sep = '| --- | --- | --- |';
     const rows = result.segments.map(s => `| ${s.label} | ${s.value} | ${s.meaning} |`).join('\n');
     const md = `## ${result.fullCode} 解析结果\n\n${header}\n${sep}\n${rows}`;
-    navigator.clipboard.writeText(md);
+    await copyText(md);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

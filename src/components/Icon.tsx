@@ -90,5 +90,3 @@ export function Icon({
 }
 
 // 便捷尺寸转换（供外部使用）
-export const iconSize = (size: IconSize | number): number =>
-  typeof size === 'number' ? size : SIZE_MAP[size];

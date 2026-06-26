@@ -4,6 +4,7 @@ import { Copy, RotateCcw, AlertTriangle, CheckCircle, Search, Sparkles, Upload, 
 import { recognizeContent, type RecognizeStatus } from '../utils/contentRecognizer';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORY_CODES, MODIFIER_CODES, COLOR_CODES, APPLICATION_CODES, FLAME_RETARDANT_CODES } from '@/utils/rules';
+import { copyText } from '@/lib/utils';
 
 export default function Parser() {
   const navigate = useNavigate();
@@ -52,19 +53,19 @@ export default function Parser() {
     }
   };
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async (text: string) => {
+    await copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopyTable = () => {
+  const handleCopyTable = async () => {
     if (!result) return;
     const header = '| 字段 | 值 | 含义 |';
     const sep = '| --- | --- | --- |';
     const rows = result.segments.map(s => `| ${s.label} | ${s.value} | ${s.meaning} |`).join('\n');
     const md = `## ${result.fullCode} 解析结果\n\n${header}\n${sep}\n${rows}`;
-    navigator.clipboard.writeText(md);
+    await copyText(md);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

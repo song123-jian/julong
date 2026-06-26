@@ -6,7 +6,7 @@ import { onSyncStatusChange, SyncStatus } from '@/lib/sync';
 import { useTheme } from '@/lib/theme';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/toast-context';
 import TitleBar from '@/components/TitleBar';
 import AboutDialog from '@/components/AboutDialog';
 
@@ -368,7 +368,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       </nav>
 
       {/* ========== 主内容区 ========== */}
-      <main className="flex-1 overflow-auto md:pb-0 pb-22">
+      <main className="flex-1 overflow-auto md:pb-0 pb-28">
         {/* 顶部装饰线 */}
         <div className="h-[3px] bg-gradient-to-r from-[#D97706] via-[#0D9488] to-[#059669] scan-effect" />
 
@@ -522,8 +522,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
 
       {/* ========== 移动端底部Tab栏 - 上移避开经典导航键 ========== */}
-      <nav className="fixed bottom-3 left-0 right-0 bg-white/80 dark:bg-[#1E293B]/80 backdrop-blur-xl border-t border-white/20 dark:border-[#334155]/20 z-30 md:hidden mx-2 rounded-xl shadow-lg">
-        <div className="flex items-center justify-around h-14">
+      <nav className="fixed bottom-2 left-0 right-0 safe-bottom bg-white/80 dark:bg-[#1E293B]/80 backdrop-blur-xl border-t border-white/20 dark:border-[#334155]/20 z-30 md:hidden mx-2 rounded-xl shadow-lg">
+        <div className="flex items-center justify-around h-13">
           {/* 手机端：显示前5个 */}
           {MOBILE_TAB_ITEMS.map(item => {
             const TabIcon = item.icon;
@@ -542,11 +542,11 @@ export default function Layout({ children }: { children: ReactNode }) {
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full" style={{ backgroundColor: item.color }} />
                 )}
                 <TabIcon
-                  size={20}
+                  size={18}
                   className={`transition-transform duration-200`}
                   style={isActive ? { color: item.color, transform: 'scale(1.05)' } : {}}
                 />
-                <span className={`text-[11px] whitespace-nowrap ${isActive ? 'font-bold' : 'font-medium'}`} style={isActive ? { color: item.color } : {}}>
+                <span className={`text-[10px] whitespace-nowrap leading-none ${isActive ? 'font-bold' : 'font-medium'}`} style={isActive ? { color: item.color } : {}}>
                   {item.label}
                 </span>
               </Link>
